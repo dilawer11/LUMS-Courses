@@ -1,10 +1,11 @@
--#include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define MEMSIZE 16384 //16KB
 #define VIRTUALSIZE 65536 // 64KB
 #define PAGESIZE 256 // 256 bytes
 #define PAGETABLESIZE 512 // 512 bytes
+int freeFramePointer=2;
 int getPageNumber(int address){		//gets the page entry number in the page table
 	int mask = 256;
 	address>>=8;				
@@ -41,35 +42,9 @@ void reduceUsed(char * val){
 	* val & = mask;
 }
 int findReplacement(char * pageTable){
-	int i,j;
-	int secondOption =-1;
-	for(i=0;i<2;i++){
-		for(j=0;j<PAGETABLESIZE;j+=2){
-			if(!checkUsed(pageTable[i]) && !checkModified(pageTable[i])){
-				int temp = i<<8;
-				return pageTable[i] | i;
-			}
-			else if (secondOption==-1 && !checkUsed(pageTable[i]) && checkModified(pageTable[i])){
-				int temp = i<<8;
-				secondOption=pageTable[i] | i;
-			}
-			else{
-				reduceUsed(&pageTable[i]);
-			}
-		}
-		if(secondOption!=-1){
-			return secondOption;
-		}
-	}
 }//use a better technique
 int bringPageIntoMemory(int address,char * pageTable,int pageNum){ //brings the page from backing store to memory
 	//read from backing store
-	//
-
-	int freeFrame = findReplacement(pageTable);
-
-
-
 	return 0;
 }
 
@@ -102,7 +77,7 @@ int writeToMemory(int frame,int address,int valToWrite){ //prototypes can be cha
 }
 int main() {
 	printf("This Works!\n");
-	
+
 	char * mainMemory = malloc(sizeof(char) * MEMSIZE); // mm = mainmemory
 	char * startPtr = mainMemory + PAGETABLESIZE; //initial it has pagetable in start
 	int i;
