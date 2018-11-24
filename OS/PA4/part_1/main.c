@@ -1,32 +1,75 @@
-#include <stdio.h>
+-#include <stdio.h>
 #include <stdlib.h>
 
 #define MEMSIZE 16384 //16KB
 #define VIRTUALSIZE 65536 // 64KB
 #define PAGESIZE 256 // 256 bytes
-#define PAGETABLESIZE 512 // 512 bytes 
+#define PAGETABLESIZE 512 // 512 bytes
 int getPageNumber(int address){		//gets the page entry number in the page table
 	int mask = 256;
 	address>>=8;				
 	return address & mask;
 }
 int getOffset(int address){		//gets the offset from an address 
-	int mask=256;
+	int mask = 256;
 	return address & mask;		
 }
-int checkInMemory(char val){	//checks if the page you're asking for is now in memory
-	int mask=1;					
-	return mask & val;
+int checkInMemory(char val){	//checks if the page you're asking for is now in memory					
+	return 2 & val;
 }	
-int checkDirty(char val){		//checks if dirty bit is on
-	int mask=2;					
-	return mask & val;	
+int checkDirty(char val){		//checks if dirty bit is on					
+	return 2& val;	
+}
+int checkModified(char val){	//check if value is modifued
+	return 4 & val;
+}	
+int checkUsed(char val){	//check if recently Used
+	return 8 & val;
+}
+void setModified(char *val){
+	*val |= 4;
 }
 void setUsed(char * val){		//sets the used bit to 1 in enchanhed page replacement technique
-	int mask=8;
 	*val |= 8;
 }
+int getEnchanhedReplacementValue(char val){
+	return val & 12;
+}
+void reduceUsed(char * val){
+	char mask = 8;
+	mask ~= mask;
+	* val & = mask;
+}
+int findReplacement(char * pageTable){
+	int i,j;
+	int secondOption =-1;
+	for(i=0;i<2;i++){
+		for(j=0;j<PAGETABLESIZE;j+=2){
+			if(!checkUsed(pageTable[i]) && !checkModified(pageTable[i])){
+				int temp = i<<8;
+				return pageTable[i] | i;
+			}
+			else if (secondOption==-1 && !checkUsed(pageTable[i]) && checkModified(pageTable[i])){
+				int temp = i<<8;
+				secondOption=pageTable[i] | i;
+			}
+			else{
+				reduceUsed(&pageTable[i]);
+			}
+		}
+		if(secondOption!=-1){
+			return secondOption;
+		}
+	}
+}//use a better technique
 int bringPageIntoMemory(int address,char * pageTable,int pageNum){ //brings the page from backing store to memory
+	//read from backing store
+	//
+
+	int freeFrame = findReplacement(pageTable);
+
+
+
 	return 0;
 }
 
