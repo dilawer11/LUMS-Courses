@@ -1,13 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MEMSIZE 16384 //16KB
+// #define MEMSIZE 16384 //16KB
 #define VIRTUALSIZE 65536 // 64KB
 #define PAGESIZE 256 // 256 bytes
 #define PAGETABLESIZE 512 // 512 bytes
-#define TOTALFRAMES 64
+// #define TOTALFRAMES 64
 #define TOTALPAGES 256
 #define BACKINGSTORE "BACKING_STORE.bin"
+
+#define TOTALFRAMES 8
+#define MEMSIZE 2048
 
 int freeFramePointer=2;
 int getPageNumber(int address){		//gets the page entry number in the page table
@@ -54,16 +57,19 @@ void decreaseUsed(char * val){
 
 void readFrame(char * memory,int frameNum,int pageNum){
 	//READ FRAME FROM BACKING STORE
+	printf("%04X %04X\n",frameNum,pageNum );
 	FILE *fptr;
 	fptr=fopen(BACKINGSTORE,"ab+");
 	if(fptr==NULL){
 		printf("Error While Opening File\n");
 		exit(1);
 	}
+	printf("here\n");	
 	unsigned int frameStartingPos=frameNum*PAGESIZE;
 	fseek(fptr,pageNum*PAGESIZE,SEEK_SET);
 	fread(memory+frameStartingPos,sizeof(char),PAGESIZE,fptr);
 	fclose(fptr);
+
 }
 void writeBackToStore(char * memory, int frameNum,int pageNum){		
 	FILE *fptr;
@@ -77,13 +83,13 @@ void writeBackToStore(char * memory, int frameNum,int pageNum){
 	fwrite(memory+frameStartingPos,sizeof(char),PAGESIZE,fptr);
 	fclose(fptr);
 }
-int bringPageIntoMemory(int address,char * pageTable,int pageNum){ 		//completed
+int bringPageIntoMemory(int address,char * pageTable,int pageNum){ 
+	//completed
 	if(freeFramePointer<TOTALFRAMES){		//if any frame is free assign that
 		pageTable[pageNum+1]=freeFramePointer;
 		readFrame(pageTable+PAGETABLESIZE,freeFramePointer,pageNum);
 		setInMemory(&pageTable[pageNum]);
-		freeFramePointer++;
-		return freeFramePointer;
+		return freeFramePointer++;
 	}
 	else{
 		int secondOption=-1;
@@ -121,32 +127,43 @@ int bringPageIntoMemory(int address,char * pageTable,int pageNum){ 		//completed
 }
 
 int getFrame(int address,char * pageTable){
+
 	int pageFault;
 	if (address>=VIRTUALSIZE || address<0 ){
-		return 0;
 		printf("Invalid Address Access\n");
+		return 0;
+		
 	}
 	else{
+
 		int pageNum=2*getPageNumber(address);
 		int check,frameAddress;
 		check = pageTable[pageNum];
+
 		if(checkInMemory(check)){		
 			frameAddress = pageTable[pageNum+1];
 			pageFault=0;		//In memory so return the frame address	
+			setUsed(&pageTable[pageNum]); 
 		}
 		else{
+
 			frameAddress=bringPageIntoMemory(address,pageTable,pageNum); //bring the page table into memory and update the page table accordingly
 			pageFault=1;
  		}
  		pageFault<<=8;
- 		setUsed(&pageTable[pageNum]); 
+ 		
  		return pageFault | frameAddress;
 	}
 }
 int readFromMemory(int address,char * pageTable){	
-	int rawFrame=getFrame(getPageNumber(address),pageTable);
+	
+	int rawFrame=getFrame(address,pageTable);
+	
 	int offset = getOffset(address);
 	int frame = getLow8(rawFrame);
+
+	printf("Frame Assigned %d\n",frame);
+
 	int pageFault = getUp8(rawFrame);
 	char * memory = pageTable+PAGETABLESIZE;
 	char value=memory[frame*PAGESIZE+offset];
@@ -160,7 +177,7 @@ int readFromMemory(int address,char * pageTable){
 		pfault=(char*)(malloc(sizeof(char)*2));
 		pfault="No";
 	}
-	printf("%d %d %d %s\n",address, physicalAddress,value,pfault);
+	//printf(" 0x%04X      	 0x%04X           0x%04X       %s\n",address, physicalAddress,value,pfault);
 	return pageFault;
 }
 int writeToMemory(int address,char * pageTable){ //prototypes can be changed
@@ -168,44 +185,33 @@ int writeToMemory(int address,char * pageTable){ //prototypes can be changed
 	int pageNum = getPageNumber(address);
 	setDirty(&pageTable[pageNum]);
 	int pageFault = getUp8(rawFrame);
-	/*
-	int offset = getOffset(address);
-	int frame = getLow8(RawFrame);
-	int pageFault = getUp8(RawFrame);
-	char * memory = pageTable+PAGETABLESIZE;
-	char value=memory[frame*PAGESIZE+offset];
-	int physicalAddress = (frame<<8)| offset
-	char * pfault;
-	if(pageFault){
-		pfault=(char*)(malloc(sizeof(char)*3));
-		pfault="Yes";
-	}
-	else{
-		pfault=(char*)(malloc(sizeof(char)*2));
-		pfault="No";
-	}
-	printf("%d %d %d %s\n",address, physicalAddress,value,pfault);
-	*/
 	return pageFault;
 
 }
 int main() {
-	printf("This Works!\n");
-
 	char * mainMemory = malloc(sizeof(char) * MEMSIZE); // mm = mainmemory
-	char * startPtr = mainMemory + PAGETABLESIZE; //initial it has pagetable in start
+	
 	int i;
 	for (i=0;i<MEMSIZE;i++){
 		mainMemory[i]=0;
 	}
+	
 
-	int add[4];
-	add[0]=0;
-	add[1]=65535;
-	add[2]=30;
-	add[3]= 20;
+	//printf("Logical Addr    Physical Addr     Value     PageFault\n");
+
+	int add[8];
+	add[0]=0x0001;
+	add[1]=0x0100;
+	add[2]=0x0310;
+	add[3]=0x0010;
+	add[4]=0x3001;
+	add[5]=0x20F5;
+	add[6]=0xFF00;
+	add[7]=0xFF10;
+	
 	int pageFaultCount=0;
-	for(i=0;i<4;i++){
+
+	for(i=0;i<8;i++){
 		pageFaultCount+=readFromMemory(add[i],mainMemory);
 	}
 	printf("Page Fault Count = %d\n",pageFaultCount);
