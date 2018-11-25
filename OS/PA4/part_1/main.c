@@ -23,6 +23,45 @@ void printPageTable(char * pageTable){
 	}
 	printf("\n");
 }
+void printMemoryFrame(char * frame){
+	int i;
+	for(i=0;i<PAGESIZE;i++){
+		if(i%4==0){
+			printf("\n");
+		}
+		printf("%02X ",frame[i]);
+		
+	}
+}
+
+//File Parsing Functions
+unsigned int parseChar(char c){
+	if(c>='0' && c<='9'){
+		return c-'0';
+	}
+	else if(c>='a' && c<='f'){
+		return 10+c-'a';
+	}
+	else if(c>='A' && c<='F'){
+		return 10+c-'A';
+	}
+	else{
+		printf("Error while parsing character\n");
+		exit(1);
+	}
+}
+unsigned int parseString(char * c,int size){
+	int i;
+	//printf("%s\n",c );
+	unsigned int hexValue=0;
+	for(i=0;i<size;i++){
+		//unsigned int parsedChar = parseChar(c[i]);
+		//printf("%d\n",parsedChar );
+		hexValue<<=4;
+		hexValue+=parseChar(c[i]);
+	}
+	return hexValue;
+}
 
 //
 
@@ -73,7 +112,7 @@ void decreaseUsed(char * val){
 void readFrame(char * memory,int frameNum,int pageIndex){		//checked
 	//READ FRAME FROM BACKING STORE
 	int pageNum=pageIndex/2;
-	printf("%04X %04X\n",frameNum,pageNum );
+	//printf("%04X %04X\n",frameNum,pageNum );
 	FILE *fptr;
 	fptr=fopen(BACKINGSTORE,"ab+");
 	if(fptr==NULL){
@@ -103,7 +142,7 @@ int bringPageIntoMemory(int address,char * pageTable,int pageIndex){
 	//completed
 	if(freeFramePointer<TOTALFRAMES){		//if any frame is free assign that
 		pageTable[pageIndex+1]=freeFramePointer;
-		readFrame(pageTable+PAGETABLESIZE,freeFramePointer,pageIndex);
+		readFrame(pageTable,freeFramePointer,pageIndex);
 		pageTable[pageIndex]=0;
 		setInMemory(&pageTable[pageIndex]);
 		return freeFramePointer++;
@@ -117,7 +156,7 @@ int bringPageIntoMemory(int address,char * pageTable,int pageIndex){
 					if(!checkUsed(pageTable[i]) && !checkDirty(pageTable[i])){
 						pageTable[pageIndex+1]=pageTable[i+1];
 						removeInMemory(&pageTable[i]);
-						readFrame(pageTable+PAGETABLESIZE,(int)pageTable[i+1],pageIndex);
+						readFrame(pageTable,(int)pageTable[i+1],pageIndex);
 						pageTable[pageIndex]=0;
 						setInMemory(&pageTable[pageIndex]);
 						return pageTable[i+1];
@@ -131,10 +170,10 @@ int bringPageIntoMemory(int address,char * pageTable,int pageIndex){
 				}
 			}
 			if(secondOption!=-1){
-				writeBackToStore(pageTable+PAGETABLESIZE,pageTable[secondOption+1],pageIndex);
+				writeBackToStore(pageTable,pageTable[secondOption+1],pageIndex);
 				pageTable[pageIndex+1]=pageTable[secondOption+1];
 				removeInMemory(&pageTable[secondOption]);
-				readFrame(pageTable+PAGETABLESIZE,(int)pageTable[secondOption+1],pageIndex);
+				readFrame(pageTable,(int)pageTable[secondOption+1],pageIndex);
 				pageTable[pageIndex]=0;
 				setInMemory(&pageTable[pageIndex]);
 				return pageTable[secondOption+1];
@@ -164,7 +203,6 @@ int getFrame(int address,char * pageTable){
 			setUsed(&pageTable[pageIndex]); 
 		}
 		else{
-
 			frameAddress=bringPageIntoMemory(address,pageTable,pageIndex); //bring the page table into memory and update the page table accordingly
 			pageFault=1;
  		}
@@ -206,24 +244,41 @@ int main() {
 	}
 	
 
-	//printf("Logical Addr    Physical Addr     Value     PageFault\n");
-
+	printf("Logical Addr    Physical Addr     Value     PageFault\n");
+	FILE * fp = fopen("temp.txt","r");
+	char buffer[9];
+	char option;
+	// while(fread(buffer,sizeof(buffer),1,fp)){
+	// 	printf("%s\n",buffer );
+	// }
+	// if(feof(fp)){
+	// 	printf("End of File\n");
+	// }
+	// else{
+	// 	printf("Error\n");
+	// }
+	// fclose(fp);
 	int add[8];
-	add[0]=0x0001;
-	add[1]=0x0100;
-	add[2]=0x0310;
-	add[3]=0x0010;
-	add[4]=0x0400;
-	add[5]=0x02F5;
-	add[6]=0x0400;
-	add[7]=0x0510;
-	
-	int pageFaultCount=0;
-
-	for(i=0;i<8;i++){
-		pageFaultCount+=readFromMemory(add[i],mainMemory);
+	double counter=0.0;
+	int pageFaultCount=0.0;
+	while(!feof(fp))
+	{
+	  fscanf(fp, "%s", buffer);
+	  unsigned int hex = parseString(buffer+2,4);
+	  fscanf(fp, "%s", &option);
+	  if(option=='0'){
+	  	pageFaultCount+=readFromMemory(hex,mainMemory);
+	  }
+	  else{
+	  	pageFaultCount+=writeToMemory(hex,mainMemory);
+	  }
+	  counter++;
 	}
-	printf("Page Fault Count = %d\n",pageFaultCount);
+	int pageFaultRate = (pageFaultCount / counter)*100;	
+	printf("Page Fault Count = %d  Page Fault Rate = %d%%\n",pageFaultCount,pageFaultRate);
+	printf("\n");
+	printPageTable(mainMemory);
+	printMemoryFrame(mainMemory+(2*256));
 	free(mainMemory);
 	return 0;
 }
