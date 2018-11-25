@@ -1,18 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// #define MEMSIZE 16384 //16KB
-// #define VIRTUALSIZE 65536 // 64KB
+#define MEMSIZE 16384 //16KB
+#define VIRTUALSIZE 65536 // 64KB
 #define PAGESIZE 256 // 256 bytes
-// #define PAGETABLESIZE 512 // 512 bytes
-// #define TOTALFRAMES 64
+#define PAGETABLESIZE 512 // 512 bytes
+#define TOTALFRAMES 64
 #define TOTALPAGES 256
 #define BACKINGSTORE "BACKING_STORE.bin"
 
-#define TOTALFRAMES 8
-#define MEMSIZE 2048
-#define VIRTUALSIZE 4096 // 64KB
-#define PAGETABLESIZE 32 // 512 bytes
+// #define TOTALFRAMES 8
+// #define MEMSIZE 2048
+// #define VIRTUALSIZE 4096 // 64KB
+// #define PAGETABLESIZE 32 // 512 bytes
 
 //Checking Functions
 void printPageTable(char * pageTable){
@@ -227,12 +227,12 @@ int readFromMemory(int address,char * pageTable){
 	return pageFault;
 }
 int writeToMemory(int address,char * pageTable){ //prototypes can be changed
-	int rawFrame=getFrame(getPageNumber(address),pageTable);
+	int rawFrame=getFrame(address,pageTable);
 	int pageNum = getPageNumber(address);
-	setDirty(&pageTable[pageNum]);
+	int pageIndex = 2 * pageNum;
+	setDirty(&pageTable[pageIndex]);
 	int pageFault = getUp8(rawFrame);
 	return pageFault;
-
 }
 int main() {
 	char * mainMemory = malloc(sizeof(char) * MEMSIZE); // mm = mainmemory
@@ -244,7 +244,7 @@ int main() {
 	
 
 	printf("Logical Addr    Physical Addr     Value     PageFault\n");
-	FILE * fp = fopen("temp.txt","r");
+	FILE * fp = fopen("addresses.txt","r");
 	char buffer[9];
 	char option;
 	// while(fread(buffer,sizeof(buffer),1,fp)){
