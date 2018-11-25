@@ -15,7 +15,7 @@
 // #define PAGETABLESIZE 32 // 512 bytes
 
 //Checking Functions
-void printPageTable(char * pageTable){
+void printPageTable(unsigned char * pageTable){
 	int i;
 	printf("\n");
 	for(i=0;i<PAGETABLESIZE;i+=2){
@@ -23,7 +23,7 @@ void printPageTable(char * pageTable){
 	}
 	printf("\n");
 }
-void printMemoryFrame(char * frame){
+void printMemoryFrame(unsigned char * frame){
 	int i;
 	for(i=0;i<PAGESIZE;i++){
 		if(i%4==0){
@@ -35,7 +35,7 @@ void printMemoryFrame(char * frame){
 }
 
 //File Parsing Functions
-unsigned int parseChar(char c){
+unsigned int parseChar(unsigned char c){
 	if(c>='0' && c<='9'){
 		return c-'0';
 	}
@@ -73,43 +73,43 @@ int getPageNumber(int address){		//gets the page entry number in the page table
 int getOffset(int address){		//gets the offset from an address 
 	return address & 0xFF;		
 }
-char getUp8(int address){		//gets the page entry number in the page table
+unsigned char getUp8(int address){		//gets the page entry number in the page table
 	address>>=8;			
 	return address & 0xFF;
 }
-char getLow8(int val){		//gets the offset from an address 
+unsigned char getLow8(int val){		//gets the offset from an address 
 	return (char)val & 0xFF;		
 }
-int checkInMemory(char val){	//checks if the page you're asking for is now in memory					
+int checkInMemory(unsigned char val){	//checks if the page you're asking for is now in memory					
 	return 1 & val;
 }	
-int checkDirty(char val){		//checks if dirty bit is on					
+int checkDirty(unsigned char val){		//checks if dirty bit is on					
 	return 2& val;	
 }
-int checkUsed(char val){	//check if recently Used
+int checkUsed(unsigned char val){	//check if recently Used
 	return 4 & val;
 }
-void setInMemory(char * val){
+void setInMemory(unsigned char * val){
 	*val |= 1;
 }
-void removeInMemory(char *val){
-	char mask =1;
+void removeInMemory(unsigned char *val){
+	unsigned char mask =1;
 	mask = ~mask;
 	*val &= mask; //sets the 1st bit to zero
 }
-void setDirty(char *val){
+void setDirty(unsigned char *val){
 	*val |= 2;
 }
-void setUsed(char * val){		//sets the used bit to 1 in enchanhed page replacement technique
+void setUsed(unsigned char * val){		//sets the used bit to 1 in enchanhed page replacement technique
 	*val |= 4;
 }
-void decreaseUsed(char * val){
-	char mask = 4;
+void decreaseUsed(unsigned char * val){
+	unsigned char mask = 4;
 	mask =~mask;
 	*val &= mask;
 }
 
-void readFrame(char * memory,int frameNum,int pageIndex){		//checked
+void readFrame(unsigned char * memory,int frameNum,int pageIndex){		//checked
 	//READ FRAME FROM BACKING STORE
 	int pageNum=pageIndex/2;
 	//printf("%04X %04X\n",frameNum,pageNum );
@@ -121,11 +121,11 @@ void readFrame(char * memory,int frameNum,int pageIndex){		//checked
 	}
 	unsigned int frameStartingPos=frameNum*PAGESIZE;
 	fseek(fptr,pageNum*PAGESIZE,SEEK_SET);
-	fread(memory+frameStartingPos,sizeof(char),PAGESIZE,fptr);
+	fread(memory+frameStartingPos,sizeof(unsigned char),PAGESIZE,fptr);
 	fclose(fptr);
 
 }
-void writeBackToStore(char * memory, int frameNum,int pageIndex){	//checkthis
+void writeBackToStore(unsigned char * memory, int frameNum,int pageIndex){	//checkthis
 	int pageNum=pageIndex/2;	
 	FILE *fptr;
 	fptr=fopen(BACKINGSTORE,"ab+");
@@ -135,10 +135,10 @@ void writeBackToStore(char * memory, int frameNum,int pageIndex){	//checkthis
 	}
 	unsigned int frameStartingPos=frameNum*PAGESIZE;
 	fseek(fptr,pageNum*PAGESIZE,SEEK_SET);
-	fwrite(memory+frameStartingPos,sizeof(char),PAGESIZE,fptr);
+	fwrite(memory+frameStartingPos,sizeof(unsigned char),PAGESIZE,fptr);
 	fclose(fptr);
 }
-int bringPageIntoMemory(int address,char * pageTable,int pageIndex){ 
+int bringPageIntoMemory(int address,unsigned char* pageTable,int pageIndex){ 
 	//completed
 	if(freeFramePointer<TOTALFRAMES){		//if any frame is free assign that
 		pageTable[pageIndex+1]=freeFramePointer;
@@ -184,7 +184,7 @@ int bringPageIntoMemory(int address,char * pageTable,int pageIndex){
 	exit(1);
 }
 
-int getFrame(int address,char * pageTable){
+int getFrame(int address,unsigned char * pageTable){
 
 	int pageFault;
 	//printPageTable(pageTable);
@@ -194,7 +194,7 @@ int getFrame(int address,char * pageTable){
 	}
 	else{
 		int pageIndex=2*getPageNumber(address);
-		char check,frameAddress;
+		unsigned char check,frameAddress;
 		check = pageTable[pageIndex];
 
 		if(checkInMemory(check)){		
@@ -211,12 +211,12 @@ int getFrame(int address,char * pageTable){
  		return pageFault | frameAddress;
 	}
 }
-int readFromMemory(int address,char * pageTable){	
+int readFromMemory(int address,unsigned char * pageTable){	
 	int rawFrame=getFrame(address,pageTable);
 	int offset = getOffset(address);
 	int frame = getLow8(rawFrame);
 	int pageFault = getUp8(rawFrame);
-	char value=pageTable[frame*PAGESIZE+offset];
+	unsigned char value=pageTable[frame*PAGESIZE+offset];
 	int physicalAddress = (frame<<8)| offset;
 	if(pageFault){
 		printf(" 0x%04X      	 0x%04X           0x%04X       Yes\n",address, physicalAddress,value);
@@ -226,16 +226,23 @@ int readFromMemory(int address,char * pageTable){
 	}	
 	return pageFault;
 }
-int writeToMemory(int address,char * pageTable){ //prototypes can be changed
+int writeToMemory(int address,unsigned char * pageTable){ //prototypes can be changed
 	int rawFrame=getFrame(address,pageTable);
-	int pageNum = getPageNumber(address);
-	int pageIndex = 2 * pageNum;
-	setDirty(&pageTable[pageIndex]);
+	int offset = getOffset(address);
+	int frame = getLow8(rawFrame);
 	int pageFault = getUp8(rawFrame);
+	unsigned char value=pageTable[frame*PAGESIZE+offset];
+	int physicalAddress = (frame<<8)| offset;
+	if(pageFault){
+		printf(" 0x%04X      	 0x%04X           0x%04X       Yes\n",address, physicalAddress,value);
+	}
+	else{
+		printf(" 0x%04X      	 0x%04X           0x%04X       No\n",address, physicalAddress,value);
+	}	
 	return pageFault;
 }
 int main() {
-	char * mainMemory = malloc(sizeof(char) * MEMSIZE); // mm = mainmemory
+	unsigned char * mainMemory = (unsigned char*)malloc(sizeof(unsigned char) * MEMSIZE); // mm = mainmemory
 	
 	int i;
 	for (i=0;i<MEMSIZE;i++){
@@ -245,8 +252,8 @@ int main() {
 
 	printf("Logical Addr    Physical Addr     Value     PageFault\n");
 	FILE * fp = fopen("addresses.txt","r");
-	char buffer[9];
-	char option;
+	unsigned char buffer[9];
+	unsigned char option;
 	// while(fread(buffer,sizeof(buffer),1,fp)){
 	// 	printf("%s\n",buffer );
 	// }
@@ -266,10 +273,12 @@ int main() {
 	  unsigned int hex = parseString(buffer+2,4);
 	  fscanf(fp, "%s", &option);
 	  if(option=='0'){
+	  	unsigned int hex = parseString(buffer+2,4);
 	  	pageFaultCount+=readFromMemory(hex,mainMemory);
 	  }
 	  else{
-	  	pageFaultCount+=writeToMemory(hex,mainMemory);
+	  	unsigned int hex = parseString(buffer+2,4);
+	  	//pageFaultCount+=writeToMemory(hex,mainMemory);
 	  }
 	  counter++;
 	}
