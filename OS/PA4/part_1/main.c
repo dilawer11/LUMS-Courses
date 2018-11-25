@@ -216,8 +216,7 @@ int readFromMemory(int address,char * pageTable){
 	int offset = getOffset(address);
 	int frame = getLow8(rawFrame);
 	int pageFault = getUp8(rawFrame);
-	char * memory = pageTable+PAGETABLESIZE;
-	char value=memory[frame*PAGESIZE+offset];
+	char value=pageTable[frame*PAGESIZE+offset];
 	int physicalAddress = (frame<<8)| offset;
 	if(pageFault){
 		printf(" 0x%04X      	 0x%04X           0x%04X       Yes\n",address, physicalAddress,value);
@@ -277,8 +276,8 @@ int main() {
 	int pageFaultRate = (pageFaultCount / counter)*100;	
 	printf("Page Fault Count = %d  Page Fault Rate = %d%%\n",pageFaultCount,pageFaultRate);
 	printf("\n");
-	printPageTable(mainMemory);
-	printMemoryFrame(mainMemory+(2*256));
+	//printPageTable(mainMemory);
+	//printMemoryFrame(mainMemory+(2*256));
 	free(mainMemory);
 	return 0;
 }
