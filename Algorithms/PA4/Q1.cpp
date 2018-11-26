@@ -60,29 +60,34 @@ int Q1::maxProduction(int i){
 	else if(i==1){
 		if(high[0]>=low[0]){
 			memo[0]="High "+to_string(high[0]);
+			cout << "Week 1: High " << high[0] << endl;
+
 			return high[0];
 		}
 		else{
 			memo[0]="Low "+to_string(low[0]);
+			cout << "Week 1: Low " << low[0] << endl;
 			return low[0];
 		}
 	}
 	else{
 		int rh = high[i-1]+maxProduction(i-2);
 		int rl = low[i-1]+maxProduction(i-1);
+		int max = rl;
 		if(rh>rl){
 			memo[i-1] = "High "+to_string(rh);
-			return rh;
+			max=rh;
 		}
 		else{
 			memo[i-1] = "Low "+to_string(rl);
-			return rl;
 		}
+	
+		return max;
 
 	}
 }
 int main(){
 	cout << "Question 1" << endl;
-	Q1 obj("q1TestCase.txt");
+	Q1 obj("Q1TestCase.txt");
 	return 0;
 }
