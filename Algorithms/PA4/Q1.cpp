@@ -52,20 +52,17 @@ int Q1::maxProduction(int i){
 		return 0;
 	}
 	else if (memo[i-1]!=""){
-		//cout <<"Week "<<i<<": "<< memo[i-1] << endl;
 		int spacePos = memo[i-1].find(" ");
 		int retVal = stoi(memo[i-1].substr(spacePos+1,memo[i-1].length()-1-spacePos));
-		//cout << i<<" "<<retVal << endl;
+
 		return retVal;
 	}
 	else if(i==1){
 		if(high[0]>=low[0]){
-			//cout << "Week 1: High " << high[0] << endl;
 			memo[0]="High "+to_string(high[0]);
 			return high[0];
 		}
 		else{
-			//cout << "Week 1: Low " << low[0] << endl;
 			memo[0]="Low "+to_string(low[0]);
 			return low[0];
 		}
@@ -74,12 +71,10 @@ int Q1::maxProduction(int i){
 		int rh = high[i-1]+maxProduction(i-2);
 		int rl = low[i-1]+maxProduction(i-1);
 		if(rh>rl){
-			//cout << "Week " << i << ": High " << high[i-1] << endl;
 			memo[i-1] = "High "+to_string(rh);
 			return rh;
 		}
 		else{
-			//cout << "Week " << i << ": Low " << low[i-1] << endl;
 			memo[i-1] = "Low "+to_string(rl);
 			return rl;
 		}
