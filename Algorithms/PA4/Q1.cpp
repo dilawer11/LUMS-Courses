@@ -28,7 +28,7 @@ Q1::Q1(string fileName){
 	for(int i=0;i<n;i++){
 		high[i]=0;
 		low[i]=0;
-		string[i]="";
+		memo[i]="";
 	}
 	fin >> temp;
 	for(int i=0;i<n;i++){
@@ -46,7 +46,7 @@ Q1::~Q1(){
 	if(low)delete [] low;
 	if(memo)delete [] memo;
 }
-int maxProduction(int i){
+int Q1::maxProduction(int i){
 	if(i==0){
 		return 0;
 	}
@@ -83,7 +83,7 @@ int maxProduction(int i){
 	}
 }
 int main(){
-	cout << "Question 1" << endl
+	cout << "Question 1" << endl;
 	Q1 obj("q1TestCase.txt");
 	return 0;
 }
