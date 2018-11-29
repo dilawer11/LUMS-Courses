@@ -148,9 +148,10 @@ int bringPageIntoMemory(int address,unsigned char* pageTable,int pageIndex){
 		return freeFramePointer++;
 	}
 	else{
-		int secondOption=-1;
+		
 		int i, j;
 		for(j=0;j<2;j++){
+			int secondOption=-1;
 			for(i=0;i<PAGETABLESIZE;i+=2){
 				if(checkInMemory(pageTable[i])){
 					if(!checkUsed(pageTable[i]) && !checkDirty(pageTable[i])){
@@ -164,7 +165,7 @@ int bringPageIntoMemory(int address,unsigned char* pageTable,int pageIndex){
 					else if (checkUsed(pageTable[i])){
 						decreaseUsed(&pageTable[i]);			//give a second chance
 					}
-					else if (secondOption!=-1){
+					else if (secondOption==-1){
 						secondOption=i;
 					}
 				}
@@ -227,19 +228,10 @@ int readFromMemory(int address,unsigned char * pageTable){
 	return pageFault;
 }
 int writeToMemory(int address,unsigned char * pageTable){ //prototypes can be changed
-	int rawFrame=getFrame(address,pageTable);
-	int offset = getOffset(address);
-	int frame = getLow8(rawFrame);
-	int pageFault = getUp8(rawFrame);
-	unsigned char value=pageTable[frame*PAGESIZE+offset];
-	int physicalAddress = (frame<<8)| offset;
-	if(pageFault){
-		printf(" 0x%04X      	 0x%04X           0x%04X       Yes\n",address, physicalAddress,value);
-	}
-	else{
-		printf(" 0x%04X      	 0x%04X           0x%04X       No\n",address, physicalAddress,value);
-	}	
-	return pageFault;
+	int retVal=readFromMemory(address,pageTable);
+	int pageIndex = 2*getPageNumber(address);
+	setDirty(&pageTable[pageIndex]);
+	return retVal;
 }
 int main() {
 	unsigned char * mainMemory = (unsigned char*)malloc(sizeof(unsigned char) * MEMSIZE); // mm = mainmemory
@@ -278,7 +270,7 @@ int main() {
 	  }
 	  else{
 	  	unsigned int hex = parseString(buffer+2,4);
-	  	//pageFaultCount+=writeToMemory(hex,mainMemory);
+	  	pageFaultCount+=writeToMemory(hex,mainMemory);
 	  }
 	  counter++;
 	}
