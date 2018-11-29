@@ -10,8 +10,9 @@ ofstream fout;
 
 class Q2{
 private:
-	int optimalCut(vector<int> cuts,vector<int> set);
+	vector<int> optimalCut(vector<int> cuts,vector<int> set);
 	void printVector(vector<int> lst);
+	void printVectorReverse(vector<int> vec);
 	vector<int> ordering;
 	vector<int> removeElem(vector<int> set,int i);
 	vector<int> addSorted(vector<int> cuts, int val);
@@ -30,14 +31,16 @@ Q2::Q2(string fileName){
 	while(fin >> temp){
 		initialSet.push_back(temp);
 	}
-	printVector(initialSet);
+	fin.close();
 	vector<int> cuts;
 	cuts.push_back(0);
 	cuts.push_back(n);
-	int val = optimalCut(cuts,initialSet);
-	cout << "Here : " << val << endl;
-	printVector(ordering);
-	fin.close();
+	vector<int> valVector = optimalCut(cuts,initialSet);
+	int val = valVector[0];
+	cout << "Optimal cut ordering: ";
+	printVectorReverse(valVector);
+	cout << "Least cost: " << valVector[0] << endl;
+	
 }
 int Q2::findPos(vector<int> cuts,int cutPos){
 	for(int i=0;i<cuts.size();i++){
@@ -70,36 +73,45 @@ vector<int> Q2::removeElem(vector<int> set,int i){
 	set.pop_back();
 	return set;
 }
-int Q2::optimalCut(vector<int> cuts,vector<int> set){
+vector<int> Q2::optimalCut(vector<int> cuts,vector<int> set){
 	// cout << "Called" << endl;
 	// printVector(cuts);
 	// printVector(set);
 	if(set.size()==1){
 		int pos = findPos(cuts,set[0]);
-		return cuts[pos]-cuts[pos-1];
+		vector<int> retVal;
+		retVal.push_back(cuts[pos]-cuts[pos-1]);
+		retVal.push_back(set[0]);
+		return retVal;
 
 	}
 	else{
 		int min;
+		vector<int> minIndexVector;
 		int minIndex;
 		int minCost;
 		for(int i=0;i<set.size();i++){
 			int pos = findPos(cuts,set[i]);
 			int newCost=cuts[pos]-cuts[pos-1];
-			int val = optimalCut(addSorted(cuts,set[i]),removeElem(set,i));
+			vector<int> valVector = optimalCut(addSorted(cuts,set[i]),removeElem(set,i));
+			int val = valVector[0];
 			if(i==0){
 				min=val;
+				minIndexVector=valVector;
 				minIndex=i;
 				minCost=newCost;
 			}
 			else if(val<min){
 				min=val;
+				minIndexVector=valVector;
 				minIndex=i;
 				minCost=newCost;
 			}
 
 		}
-		return minCost+min;
+		minIndexVector.push_back(set[minIndex]);
+		minIndexVector[0]+=minCost;
+		return minIndexVector;
 		
 	}
 }
@@ -107,6 +119,12 @@ void Q2::printVector(vector<int> lst){
 	vector<int> :: iterator it;
 	for(it=lst.begin();it!=lst.end();++it){
 		cout << *it << " " ;
+	}
+	cout << endl;
+}
+void Q2::printVectorReverse(vector<int> vec){
+	for(int i = vec.size()-1;i>0;i--){
+		cout << vec[i] << " ";
 	}
 	cout << endl;
 }
