@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <ctime>
 
 using namespace std;
 ifstream fin;
@@ -36,7 +37,8 @@ public:
 	Q5();
 	Q5(int sizeN);
 	Q5(int * arr,int sizeN);
-	int ** makeSum(int ** grid,int sizeN);
+	void run();
+	
 
 private:
 	int n;
@@ -45,6 +47,7 @@ private:
 	void printGrid(int ** arr, int sizeN);
 	retVal maxGridSum(points start,int sizeN);
 	void printResult(retVal temp);
+	int ** makeSum(int ** grid,int sizeN);
 	
 };
 Q5::Q5(){
@@ -59,21 +62,40 @@ Q5::Q5(){
 		}
 		cout << endl;
 	}
+	run();
+
+}
+Q5::Q5(int sizeN){//random
+	n=sizeN;
+	grid = new int * [n];
+	srand((unsigned)time(0));
+	for(int i=0;i<sizeN;i++){
+		grid[i]=new int[n];
+		for(int j=0;j<sizeN;j++){
+			grid[i][j]=(rand()%200)-100;
+		}
+	}
+	run();
+}
+Q5::Q5(int * arr,int sizeN){//from an array of size nxn
+	n=sizeN;
+	grid = new int * [n];
+	for(int i=0;i<sizeN;i++){
+		grid[i]= new int[n];
+		for(int j=0;j<sizeN;j++){
+			grid[i][j]=arr[(i*sizeN)+j];
+		}
+	}
+	run();
+}
+void Q5::run(){
 	printGrid(grid,n);
 	cout << endl;
 	sumGrid = makeSum(grid,n);
-
-	printGrid(sumGrid,n);
 	cout << endl;
 	points startpoints(0,0);
 	retVal temp = maxGridSum(startpoints,1);
 	printResult(temp);
-}
-Q5::Q5(int sizeN){//random
-
-}
-Q5::Q5(int * arr,int sizeN){//from an array of size nxn
-
 }
 
 retVal Q5::maxGridSum(points start,int sizeN){
@@ -141,10 +163,30 @@ void Q5::printGrid(int ** arr,int sizeN){
 void Q5::printResult(retVal temp){ //temp output
 	cout << "Max Sum : " << temp.val << endl;
 	cout << "Start Point  : (" << temp.startPos.row << "," << temp.startPos.col <<")" <<endl;
+	cout << "End   Point  : (" << temp.startPos.row+temp.size-1 << "," << temp.startPos.col+temp.size-1 <<")" <<endl;
 	cout << "Size of Square : " << temp.size << endl;
 }
 int main(){
 	cout << "Question 5" << endl;
-	Q5 obj;
+	int option;
+	
+	cout << "Choose Option: 1 for Random Array, 2 for Input, 3 for Custom Array" << endl;
+	cin >> option;
+	
+	if(option==1){
+		int size;
+		cout << "Input Size: " << endl;
+		cin >> size;
+		Q5 obj(size);
+	}
+	else if(option==2){
+		Q5 obj;
+	}
+	else if(option==3){
+		int size=0;
+		int * array =NULL;
+		Q5 obj(array,size);
+	}
+	
 	return 0;
 }
