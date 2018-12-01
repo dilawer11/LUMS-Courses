@@ -92,6 +92,7 @@ void Q5::run(){
 	printGrid(grid,n);
 	cout << endl;
 	sumGrid = makeSum(grid,n);
+	//printGrid(sumGrid,n);
 	cout << endl;
 	points startpoints(0,0);
 	retVal temp = maxGridSum(startpoints,1);
@@ -99,8 +100,8 @@ void Q5::run(){
 }
 
 retVal Q5::maxGridSum(points start,int sizeN){
-	//cout << "Called" << endl;
-	if(start.row>=n || start.col>=n || start.row+sizeN>n || start.col+sizeN>n){ 
+	//cout << "Called With Points : " << start.row << " " << start.col << " Size : " << sizeN << endl;
+	if(start.row>=n || start.col>=n || start.row+sizeN-1 >= n || start.col+sizeN-1 >= n){ 
 		//cout << "here" << endl;
 		return retVal(0,points(0,0),-1);
 	}
@@ -109,8 +110,8 @@ retVal Q5::maxGridSum(points start,int sizeN){
 		int colVal=0,rowVal=0,diagVal=0;
 		if(start.row-1>=0 && start.col-1>=0){
 			diagVal = sumGrid[start.row-1][start.col-1];
-			rowVal=sumGrid[start.row-1][start.col];
-			colVal=sumGrid[start.row][start.col-1];
+			rowVal=sumGrid[start.row-1][start.col+sizeN-1];
+			colVal=sumGrid[start.row+sizeN-1][start.col-1];
 		}
 		else if(start.row-1>=0){
 			rowVal=sumGrid[start.row-1][start.col];
@@ -124,10 +125,10 @@ retVal Q5::maxGridSum(points start,int sizeN){
 		sumValues[1]=maxGridSum(start,sizeN+1);
 		sumValues[2]=maxGridSum(points(start.row,start.col+1),sizeN);
 		sumValues[3]=maxGridSum(points(start.row+1,start.col),sizeN);
-		retVal max(0,points(0,0),-1);
+		retVal max=sumValues[0];
 
 		for(int i=0;i<4;i++){
-			if(sumValues[i].val>max.val){
+			if(sumValues[i].val>max.val && sumValues[i].size!=-1){
 				max=sumValues[i];
 			}
 		}
