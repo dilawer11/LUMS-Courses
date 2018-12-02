@@ -92,7 +92,6 @@ void Q5::run(){
 	printGrid(grid,n);
 	cout << endl;
 	sumGrid = makeSum(grid,n);
-	//printGrid(sumGrid,n);
 	cout << endl;
 	points startpoints(0,0);
 	retVal temp = maxGridSum(startpoints,1);
