@@ -4,17 +4,11 @@
 #define MEMSIZE 131072 //128KB (2^17)
 #define VIRTUALSIZE 16777216 // 16MB (2^24)
 #define PAGESIZE 1024 // 1 KB (2^10)
-// #define PAGETABLESIZE 512 // 512 bytes confirm whether 2 bytes or 4 bytes
+#define PAGETABLE1SIZE 256
 #define TOTALFRAMES 128
 #define TOTALPAGES 16384 
 #define ENTRYSIZE 4
 #define BACKINGSTORE "BACKING_STORE.bin"
-
-
-// #define TOTALFRAMES 8
-// #define MEMSIZE 2048
-// #define VIRTUALSIZE 4096 // 64KB
-// #define PAGETABLESIZE 32 // 512 bytes
 
 //Checking Functions
 void printPageTable(unsigned char * pageTable){

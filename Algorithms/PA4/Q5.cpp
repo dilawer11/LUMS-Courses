@@ -92,7 +92,7 @@ void Q5::run(){
 	printGrid(grid,n);
 	cout << endl;
 	sumGrid = makeSum(grid,n);
-	printGrid(sumGrid,n);
+	//printGrid(sumGrid,n);
 	cout << endl;
 	points startpoints(0,0);
 	retVal temp = maxGridSum(startpoints,1);
@@ -184,8 +184,8 @@ int main(){
 		Q5 obj;
 	}
 	else if(option==3){
-		int size=0;
-		int * array =NULL;
+		int size=5;
+		int array[25]={ 1, 8, 33, -1, 20, -10, 2, 23, -7, 27, -27, 8, 6, 7, 32, -25, 4, -67, 4, 4, 3, 11, 5, 4, 5 };
 		Q5 obj(array,size);
 	}
 	
