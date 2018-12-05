@@ -142,6 +142,20 @@ void readFrame(unsigned char * memory,int frameNum,int address){
 	fclose(fptr);
 }
 //above this okay
+void writePageBack(int index,int frame,unsigned char * memory){
+
+	FILE *fptr;
+	int num =index/ENTRYSIZE;
+	fptr=fopen(PAGESTORE,"ab+");
+	if(fptr==NULL){
+		printf("Error While Opening File\n");
+		exit(1);
+	}
+	unsigned int frameStartingPos=frame*PAGESIZE;
+	fseek(fptr,num*PAGESIZE,SEEK_SET);
+	fread(memory+frameStartingPos,sizeof(unsigned char),PAGESIZE,fptr);
+	fclose(fptr);
+}
 int bringPageIntoMemory(int page1Num,unsigned char * memory){
 //completed
 	int pageIndex = page1Num * ENTRYSIZE;
@@ -179,6 +193,7 @@ int bringPageIntoMemory(int page1Num,unsigned char * memory){
 				}
 			}
 			if(secondOption!=-1){
+				writePageBack(secondOption,memory);
 				memory[pageIndex+1]=memory[secondOption+1];
 				memory[pageIndex+2]=memory[secondOption+2];
 				int frame = getInt(memory[pageIndex+1],memory[pageIndex+2]);
