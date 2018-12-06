@@ -45,10 +45,10 @@ unsigned int parseString(char * c,int size){
 
 //
 
-int freeFramePointer=33;
+int freeFramePointer=34;
 int freePagePointer=1;
 int getPage1Number(int address){
-	address>=18;
+	address>>=18;
 	return address & 0x3F;
 }
 int getPage2Number(int address){		//gets the page entry number in the page table
@@ -64,11 +64,12 @@ int getFrameNumber(unsigned char * ptr){
 	frameNum |= ptr[2];
 	return frameNum;
 }
-unsigned char * divideIntoChar(int number){
-	unsigned char * divided= (unsigned char *)(malloc(sizeof(unsigned char)*2));
-	divided[0]=(number & 0xFF00) >> 8;
-	divided[1]=number & 0xFF;
-	return divided;
+
+unsigned char divUp(int number){
+	return (number >> 8) & 0xFF;
+}
+unsigned char divLow(int number){
+	return number & 0xFF;
 }
 int getInt(unsigned char first,unsigned char second){
 	return (first << 8) | second;
@@ -159,10 +160,9 @@ void writePageBack(int index,int frame,unsigned char * memory){
 int bringPageIntoMemory(int page1Num,unsigned char * memory){
 //completed
 	int pageIndex = page1Num * ENTRYSIZE;
-	if(freePagePointer<33){		//if any frame is free assign that
-		unsigned char * divided =divideIntoChar(freePagePointer);
-		memory[pageIndex+1]=divided[0];
-		memory[pageIndex+2]=divided[1];
+	if(freePagePointer<34){		//if any frame is free assign that
+		memory[pageIndex+1]=divUp(freePagePointer);
+		memory[pageIndex+2]=divLow(freePagePointer);
 		readPage(memory,freePagePointer,pageIndex);
 		memory[pageIndex]=0;
 		setInMemory(&memory[pageIndex+3]);
@@ -211,9 +211,8 @@ int bringPageIntoMemory(int page1Num,unsigned char * memory){
 int bringFrameIntoMemory(int address,unsigned char* memory,int pageIndex){ 
 	//completed
 	if(freeFramePointer<TOTALFRAMES){		//if any frame is free assign that
-		unsigned char * divided =divideIntoChar(freeFramePointer);
-		memory[pageIndex+1]=divided[0];
-		memory[pageIndex+2]=divided[1];
+		memory[pageIndex+1]=divUp(freeFramePointer);
+		memory[pageIndex+2]=divLow(freeFramePointer);
 		readFrame(memory,freeFramePointer,pageIndex);
 		memory[pageIndex]=0;
 		setInMemory(&memory[pageIndex+3]);
@@ -229,7 +228,8 @@ int bringFrameIntoMemory(int address,unsigned char* memory,int pageIndex){
 						memory[pageIndex+1]=memory[i+1];	//copy the frame number
 						memory[pageIndex+2]=memory[i+2];
 						int frame = getInt(memory[pageIndex+1],memory[pageIndex+2]);
-						removeInMemory(&memory[i+3]);
+						//removeInMemory(&memory[i+3]);
+						memory[secondOption+3]=0;
 						readFrame(memory,frame,address);
 						memory[pageIndex+3]=0;
 						setInMemory(&memory[pageIndex+3]);
@@ -247,7 +247,8 @@ int bringFrameIntoMemory(int address,unsigned char* memory,int pageIndex){
 				memory[pageIndex+1]=memory[secondOption+1];
 				memory[pageIndex+2]=memory[secondOption+2];
 				int frame = getInt(memory[pageIndex+1],memory[pageIndex+2]);
-				removeInMemory(&memory[secondOption+3]);
+				//removeInMemory(&memory[secondOption+3]);
+				memory[secondOption+3]=0;
 				readFrame(memory,frame,address);
 				memory[pageIndex+3]=0;
 				setInMemory(&memory[pageIndex+3]);
@@ -285,6 +286,7 @@ int getFrame(int address,unsigned char * memory){
 int getPageTable(int address,unsigned char * memory){
 
 	int page1Num=getPage1Number(address);
+	// printf("Page1Num %d",page1Num);
 	int index = ENTRYSIZE * page1Num;
 	int pageFault=0;
 	int frame;
@@ -305,15 +307,12 @@ int readFromMemory(int address,unsigned char * memory){
 
 	int rawFrame = getFrame(address,memory);
 	int frame = rawFrame & 0xFFFF;
-
 	int offset = getOffset(address);
 	int pageFault2 = (rawFrame >> 16) & 1;
 	unsigned char value=memory[(frame*PAGESIZE)+offset];
-	
-	int physicalAddress = (frame<<8)| offset;
+	int physicalAddress = (frame<<10)| offset;
 	int innerFrame = (pageTable & 0xFFFF);
-
-	printf(" 0x%04X      	 0x%04X           0x%04X       0x%04X",address, innerFrame, physicalAddress, value);
+	printf(" 0x%06X      	 0x%04X           0x%06X       0x%04X",address, innerFrame, physicalAddress, value);
 	if(pageFault1){
 		printf("       Yes");
 	}
@@ -359,7 +358,7 @@ int main() {
 	
 
 	printf("Logical Addr    Inner Frame   Physical Addr     Value     PageFaultPT     PageFaultPage\n");
-	FILE * fp = fopen("addresses.txt","r");
+	FILE * fp = fopen("temp.txt","r");
 	unsigned char buffer[9];
 	unsigned char option;
 	// while(fread(buffer,sizeof(buffer),1,fp)){
@@ -385,7 +384,7 @@ int main() {
 	  	pageFaultCount+=readFromMemory(hex,mainMemory);
 	  }
 	  else{
-
+	  	pageFaultCount+=readFromMemory(hex,mainMemory);
 	  	//pageFaultCount+=writeToMemory(hex,mainMemory);
 	  }
 	  counter+=2;
