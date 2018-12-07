@@ -144,7 +144,7 @@ void readFrame(unsigned char * memory,int frameNum,int address){
 void writePageBack(int index,int frameIndex,unsigned char * memory){
 	int frame = getInt(memory[frameIndex+1],memory[frameIndex+2]);
 	FILE *fptr;
-	fptr=fopen(PAGESTORE,"ab+");
+	fptr=fopen(PAGESTORE,"r+b");
 	if(fptr==NULL){
 		printf("Error While Opening File\n");
 		exit(1);
