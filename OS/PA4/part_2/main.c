@@ -381,7 +381,7 @@ void initStore(){
 	fclose(fptr);
 	free(temp);
 }
-int main() {
+int main(int argc, char *argv[]) {
 	unsigned char * mainMemory = (unsigned char*)malloc(sizeof(unsigned char) * MEMSIZE); // mm = mainmemory
 	
 	int i;
@@ -391,10 +391,15 @@ int main() {
 	initStore();
 
 	
-
+	FILE * fp;
 	printf("Logical Addr    Inner Frame   Physical Addr     Value     PageFaultPT     PageFaultPage\n");
-	FILE * fp = fopen("addresses.txt","r");
-	// FILE * fp = fopen("temp.txt","r");
+	if(argc==1){
+		fp = fopen("addresses.txt","r");
+	}
+	else{
+		fp= fopen(argv[1],"r");
+	}
+	
 	unsigned char buffer[9];
 	unsigned char option;
 	// while(fread(buffer,sizeof(buffer),1,fp)){
