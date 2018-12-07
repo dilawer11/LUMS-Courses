@@ -4,7 +4,6 @@
 #define MEMSIZE 131072 //128KB (2^17)
 #define VIRTUALSIZE 16777216 // 16MB (2^24)
 #define PAGESIZE 1024 // 1 KB (2^10)
-#define PAGETABLE1SIZE 256
 #define TOTALFRAMES 128
 
 #define ENTRYSIZE 4
@@ -47,18 +46,18 @@ unsigned int parseString(char * c,int size){
 
 int freeFramePointer=34;
 int freePagePointer=1;
-int getPage1Number(int address){
+unsigned int getPage1Number(int address){
 	address>>=18;
 	return address & 0x3F;
 }
-int getPage2Number(int address){		//gets the page entry number in the page table
+unsigned int getPage2Number(int address){		//gets the page entry number in the page table
 	address>>=10;				
 	return address & 0xFF;
 }
-int getOffset(int address){		//gets the offset from an address 
+unsigned int getOffset(int address){		//gets the offset from an address 
 	return address & 0x3FF;		
 }
-int getFrameNumber(unsigned char * ptr){
+unsigned int getFrameNumber(unsigned char * ptr){
 	int frameNum = ptr[1];
 	frameNum<<=8;
 	frameNum |= ptr[2];
@@ -125,7 +124,7 @@ void readPage(unsigned char * memory,int frameNum,int pageIndex){
 	fclose(fptr);
 }
 void readFrame(unsigned char * memory,int frameNum,int address){		
-	//READ FRAME FROM BACKING STORE
+
 	int pageNum=(address>>10) & 0x3FFF;
 
 	//printf("%04X %04X\n",frameNum,pageNum );
@@ -141,15 +140,23 @@ void readFrame(unsigned char * memory,int frameNum,int address){
 	fclose(fptr);
 }
 
-void writePageBack(int index,int frameIndex,unsigned char * memory){
+void writePageBack(int frameIndex,unsigned char * memory){
 	int frame = getInt(memory[frameIndex+1],memory[frameIndex+2]);
+	int index = frameIndex / ENTRYSIZE ;
 	FILE *fptr;
 	fptr=fopen(PAGESTORE,"r+b");
+
+	unsigned int frameStartingPos=frame*PAGESIZE;
+	if(frame==34){
+		for(int i=frameStartingPos;i<frameStartingPos+PAGESIZE;i+=4){
+			memory[i+3]=0;
+		}
+	}
 	if(fptr==NULL){
 		printf("Error While Opening File\n");
 		exit(1);
 	}
-	unsigned int frameStartingPos=frame*PAGESIZE;
+	
 	fseek(fptr,index*PAGESIZE,SEEK_SET);
 	fwrite(memory+frameStartingPos,sizeof(unsigned char),PAGESIZE,fptr);
 	fclose(fptr);
@@ -173,7 +180,7 @@ int bringPageIntoMemory(int page1Num,unsigned char * memory){
 			for(i=0;i<256;i+=4){
 				if(checkInMemory(memory[i+3])){
 					if(!checkUsed(memory[i+3]) && !checkDirty(memory[i+3])){
-						writePageBack(page1Num,secondOption,memory);
+						writePageBack(secondOption,memory);
 						memory[pageIndex+1]=memory[i+1];	//copy the frame number
 						memory[pageIndex+2]=memory[i+2];
 						int frame = getInt(memory[pageIndex+1],memory[pageIndex+2]);
@@ -192,7 +199,7 @@ int bringPageIntoMemory(int page1Num,unsigned char * memory){
 				}
 			}
 			if(secondOption!=-1){
-				writePageBack(page1Num,secondOption,memory);
+				writePageBack(secondOption,memory);
 				memory[pageIndex+1]=memory[secondOption+1];
 				memory[pageIndex+2]=memory[secondOption+2];
 				memory[secondOption+3]=0;
@@ -220,7 +227,7 @@ int bringFrameIntoMemory(int address,unsigned char* memory,int pageIndex){
 		int i, j;
 		for(j=0;j<2;j++){
 			int secondOption=-1;
-			for(i=PAGESIZE;i<PAGESIZE*33;i+=4){
+			for(i=PAGESIZE;i<PAGESIZE*3;i+=4){
 				if(checkInMemory(memory[i+3])){
 					if(!checkUsed(memory[i+3]) && !checkDirty(memory[i+3])){
 						memory[pageIndex+1]=memory[i+1];	//copy the frame number
@@ -252,8 +259,13 @@ int bringFrameIntoMemory(int address,unsigned char* memory,int pageIndex){
 			}
 		}
 	}
-	printf("Error Something Went Wrong Here\n");		//Program Shouldn't come here
-	exit(1);
+	memory[pageIndex+1]=divUp(34);
+	memory[pageIndex+2]=divLow(34);
+	readFrame(memory,34,pageIndex);
+	memory[pageIndex+3]=0;
+	setInMemory(&memory[pageIndex+3]);
+	return 34;
+
 }
 
 int getFrame(int address,unsigned char * memory){
@@ -264,7 +276,7 @@ int getFrame(int address,unsigned char * memory){
 	int frame = getInt(memory[page1Index+1],memory[page1Index+2]);
 	int index = (frame*PAGESIZE)+page2Index;
 	int pageFault;
-	int frameAddress;
+	int frameAddress=0;
 	if(checkInMemory(memory[index+3])){		//..//w
 		frameAddress = getInt(memory[index+1],memory[index+2]);
 		pageFault=0;		//In memory so return the frame address	
@@ -273,9 +285,10 @@ int getFrame(int address,unsigned char * memory){
 	else{
 		frameAddress=bringFrameIntoMemory(address,memory,index); //bring the page table into memory and update the page table accordingly
 		pageFault=1;
+
 	}
 	pageFault<<=16;
-		
+	
 	return pageFault | frameAddress;
 }
 int getPageTable(int address,unsigned char * memory){
@@ -294,15 +307,21 @@ int getPageTable(int address,unsigned char * memory){
 	return (pageFault<<16) | frame;
 }
 int readFromMemory(int address,unsigned char * memory){	
+
 	int pageTable=getPageTable(address,memory);
 	int pageFault1 = (pageTable >> 16) & 1;
+
 	int rawFrame = getFrame(address,memory);
+
 	int frame = rawFrame & 0xFFFF;
 	int offset = getOffset(address);
 	int pageFault2 = (rawFrame >> 16) & 1;
+	//printf("%d\n",frame);
 	unsigned char value=memory[(frame*PAGESIZE)+offset];
+	
 	int physicalAddress = (frame<<10)| offset;
 	int innerFrame = (pageTable & 0xFFFF);
+
 	printf(" 0x%06X      	 0x%04X           0x%06X       0x%04X",address, innerFrame, physicalAddress, value);
 	if(pageFault1){
 		printf("       Yes");
@@ -319,12 +338,37 @@ int readFromMemory(int address,unsigned char * memory){
 	return pageFault1+pageFault2;
 
 }
-// int writeToMemory(int address,unsigned char * pageTable){ //prototypes can be changed
-// 	int retVal=readFromMemory(address,pageTable);
-// 	int pageIndex = ENTRYSIZE*getPageNumber(address);
-// 	setDirty(&pageTable[pageIndex]);
-// 	return retVal;
-// }
+int writeToMemory(int address,unsigned char * memory){ //prototypes can be changed
+	int pageTable=getPageTable(address,memory);
+	int innerFrame = (pageTable & 0xFFFF);
+	int pageFault1 = (pageTable >> 16) & 1;
+	int rawFrame = getFrame(address,memory);
+	int frame = rawFrame & 0xFFFF;
+	
+	int offset = getOffset(address);
+	int pageFault2 = (rawFrame >> 16) & 1;
+	unsigned char value=memory[(frame*PAGESIZE)+offset];
+	int physicalAddress = (frame<<10)| offset;
+	
+	printf(" 0x%06X      	 0x%04X           0x%06X       0x%04X",address, innerFrame, physicalAddress, value);
+	if(pageFault1){
+		printf("       Yes");
+	}
+	else{
+		printf("       No ");
+	}	
+	if(pageFault2){
+		printf("       Yes\n");
+	}
+	else{
+		printf("       No\n");
+	}	
+	int innerPageIndex = (innerFrame*PAGESIZE)+(getPage2Number(address)*ENTRYSIZE);
+	setDirty(&memory[innerPageIndex+3]);
+
+	return pageFault1+pageFault2;
+}
+
 void initStore(){
 	unsigned char * temp = (unsigned char *)malloc(sizeof(unsigned char) * 64*PAGESIZE);
 	FILE *fptr;
@@ -376,8 +420,7 @@ int main() {
 	  	pageFaultCount+=readFromMemory(hex,mainMemory);
 	  }
 	  else{
-	  	pageFaultCount+=readFromMemory(hex,mainMemory);
-	  	//pageFaultCount+=writeToMemory(hex,mainMemory);
+	  	pageFaultCount+=writeToMemory(hex,mainMemory);
 	  }
 	  counter+=2;
 	}
